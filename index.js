@@ -1,17 +1,10 @@
-/**
- * Auteur: EXOBOT
- * Licence: MIT
- * Support Discord: https://discord.gg/3FeWMvWdna
- * Version: 1.1.3
- * Date de sortie: 17 Novembre 2024
- */
-
 'use strict';
 
 import * as dotenv from 'dotenv';
 import {
     Client,
     GatewayIntentBits,
+    Collection,
     REST,
     Routes,
     EmbedBuilder,
@@ -24,10 +17,15 @@ import {
     ActivityType,
     ChannelType,
     MessageFlags,
-    PermissionFlagsBits
+    PermissionFlagsBits,
+    AttachmentBuilder
 } from 'discord.js';
 import { createConnection } from 'mysql2/promise';
+import { createCanvas } from 'canvas'; 
+import Chart from 'chart.js/auto';
 import schedule from 'node-schedule';
+import * as os from 'os';
+import { version as discordJsVersion } from 'discord.js';
 
 // Configuration et initialisation des variables d'environnement
 dotenv.config();
@@ -56,18 +54,23 @@ const client = new Client({
 });
 
 let connection;
-let data = { servers: {}, reminders: {} };
+let data = { servers: {}, reminders: {} }; // Initialisation de data
 let dataChanged = false;
 
 // Fonctions utilitaires
 async function connectToDatabase() {
-    connection = await createConnection({
-        host: process.env.MYSQL_HOST,
-        user: process.env.MYSQL_USER,
-        password: process.env.MYSQL_PASSWORD,
-        database: process.env.MYSQL_DATABASE
-    });
-    console.log('✅ Connecté à la base de données MySQL.');
+    try {
+        connection = await createConnection({
+            host: process.env.MYSQL_HOST,
+            user: process.env.MYSQL_USER,
+            password: process.env.MYSQL_PASSWORD,
+            database: process.env.MYSQL_DATABASE
+        });
+        console.log('✅ Connecté à la base de données MySQL.');
+    } catch (error) {
+        console.error("⚠️ Erreur de connexion à la base de données:", error);
+        process.exit(1); // Arrêter le processus en cas d'échec de connexion
+    }
 }
 
 async function loadData() {
@@ -118,14 +121,12 @@ async function saveData() {
         const serverValues = [];
         const userValues = [];
 
-        // Vérifiez que data.servers est défini et est un objet
         if (data.servers && typeof data.servers === 'object') {
             for (const [guildId, serverData] of Object.entries(data.servers)) {
                 const { enabled, bumpChannel, description, bannerLink, reminders, inviteLink, adViews, voteCount, lastVote, bumpCount, bumpCountToday, bumpCountWeek, bumpCountMonth } = serverData;
 
                 serverValues.push([enabled, bumpChannel, description, bannerLink, reminders, inviteLink, adViews, voteCount, lastVote, bumpCount, bumpCountToday, bumpCountWeek, bumpCountMonth, guildId]);
 
-                // Vérifiez que serverData.userData est défini et est un objet
                 if (serverData.userData && typeof serverData.userData === 'object') {
                     for (const [userId, userData] of Object.entries(serverData.userData)) {
                         const { bumpCount, xp, voteCount, lastLevel } = userData;
@@ -179,7 +180,7 @@ async function saveData() {
     } catch (error) {
         await connection.rollback();
         console.error("⚠️ Erreur lors de la sauvegarde des données dans MySQL:", error);
-        throw error; // Rejeter l'erreur pour une gestion supplémentaire si nécessaire
+        throw error;
     }
 }
 
@@ -196,18 +197,49 @@ async function updatePresence() {
     client.user.setStatus('online');
 }
 
+// Fonction pour générer un graphique avec Chart.js
+async function generateBarChart(labels, data, title) {
+    const canvas = createCanvas(800, 400);
+    const ctx = canvas.getContext('2d');
+
+    new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labels,
+            datasets: [{
+                label: title,
+                data: data,
+                backgroundColor: 'rgba(54, 162, 235, 0.2)',
+                borderColor: 'rgba(54, 162, 235, 1)',
+                borderWidth: 1
+            }]
+        },
+        options: {
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+
+    return canvas.toBuffer();
+}
+
 // Commandes et gestion des interactions
 const commands = [
-    { name: 'bump', description: 'Envoyer un bump à tous les serveurs connectés.' },
-    { name: 'ping_config', description: 'Activer ou désactiver le rappel pour bump.' },
-    { name: 'bump_toggle', description: 'Activer ou désactiver le bot sur ce serveur (admin uniquement).' },
-    { name: 'top_server', description: 'Voir les meilleurs serveurs bumpés.' },
-    { name: 'bump_config', description: 'Configurer la description et le lien bannière (admin uniquement).' },
-    { name: 'bump_set_channel', description: 'Définir le salon où les bumps doivent être envoyés (admin uniquement).' },
-    { name: 'top_user', description: 'Voir les meilleurs utilisateurs bumpers.' },
-    { name: 'bump_preview', description: 'Voir un aperçu du bump (admin uniquement).' },
-    { name: 'stats_bump', description: 'Afficher les statistiques détaillées des bumps.' },
-    { name: 'vote', description: 'Voter pour le serveur.' }
+    { name: 'bump', description: 'Envoyer un bump à tous les serveurs connectés.', setDMPermission: false },
+    { name: 'ping_config', description: 'Activer ou désactiver le rappel pour bump.', setDMPermission: false },
+    { name: 'bump_toggle', description: 'Activer ou désactiver le bot sur ce serveur (admin uniquement).', setDMPermission: false },
+    { name: 'top_server', description: 'Voir les meilleurs serveurs bumpés.', setDMPermission: false },
+    { name: 'bump_config', description: 'Configurer la description et le lien bannière (admin uniquement).', setDMPermission: false },
+    { name: 'bump_set_channel', description: 'Définir le salon où les bumps doivent être envoyés (admin uniquement).', setDMPermission: false },
+    { name: 'top_user', description: 'Voir les meilleurs utilisateurs bumpers.', setDMPermission: false },
+    { name: 'bump_preview', description: 'Voir un aperçu du bump (admin uniquement).', setDMPermission: false },
+    { name: 'stats_bump', description: 'Afficher les statistiques détaillées des bumps.', setDMPermission: false },
+    { name: 'vote', description: 'Voter pour le serveur.' },
+    { name: 'help', description: 'Affiche la liste des commandes disponibles.', setDMPermission: false },
+    { name: 'botinfo', description: 'Affiche les informations du bot.', setDMPermission: false }
 ];
 
 client.once("ready", async () => {
@@ -266,7 +298,7 @@ client.on("inviteDelete", async invite => {
 });
 
 // Rate limiter
-const rateLimit = new Map();
+const rateLimit = new Collection();
 const MAX_COMMANDS = 5;
 const TIME_WINDOW = 60000;
 
@@ -287,7 +319,7 @@ async function handleInteraction(interaction) {
     if (!interaction.isCommand() && !interaction.isModalSubmit()) return;
     const { commandName, guildId, user } = interaction;
     if (checkRateLimit(user.id)) {
-        return interaction.reply({ content: '❌ Vous avez atteint la limite de commandes. Veuillez réessayer plus tard.', flags: [MessageFlags.Ephemeral] });
+        return interaction.reply({ content: '<:Erreur:1343303750336385185> Vous avez atteint la limite de commandes. Veuillez réessayer plus tard.', flags: [MessageFlags.Ephemeral] });
     }
 
     if (!data.servers[guildId]) {
@@ -323,6 +355,8 @@ async function handleInteraction(interaction) {
         case 'bump_preview': await handleBumpPreviewCommand(interaction, serverData, guildId); break;
         case 'stats_bump': await handleStatsBumpCommand(interaction); break;
         case 'vote': await handleVoteCommand(interaction, serverData, user, guildId); break;
+        case 'help': await handleHelpCommand(interaction); break;
+        case "botinfo": await handleBotInfo(interaction); break;
         default: if (interaction.isModalSubmit() && interaction.customId === 'bumpConfigModal') await handleBumpConfigModalSubmit(interaction, serverData); break;
     }
     await saveDataIfChanged();
@@ -384,7 +418,6 @@ async function createInviteIfNeeded(guild) {
     }
 }
 
-const XP_PER_BUMP = 10;
 const LEVEL_UP_XP = 1000;
 const BUMP_COOLDOWN = 3600000; // 1 heure
 const VOTE_COOLDOWN = 86400000; // 24 heures
@@ -426,6 +459,10 @@ function calculateXPForNextLevel(xp) {
     return LEVEL_UP_XP - (xp % LEVEL_UP_XP);
 }
 
+function getRandomXP() {
+    return Math.floor(Math.random() * 10) + 1;
+}
+
 const bumpQueue = [];
 const MAX_CONCURRENT_BUMPS = 5;
 let currentBumps = 0;
@@ -433,14 +470,14 @@ let queueEmbedMessage = null;
 
 async function handleBumpCommand(interaction, serverData, user, guildId) {
     if (!serverData.bumpChannel) {
-        return interaction.reply({ content: ' ❌ Le salon de bump n\'est pas configuré.', flags: [MessageFlags.Ephemeral] });
+        return interaction.reply({ content: '<:Erreur:1343303750336385185> Le salon de bump n\'est pas configuré.', flags: [MessageFlags.Ephemeral] });
     }
 
     if (isOnCooldown(serverData.lastBump, BUMP_COOLDOWN)) {
         const remainingTime = getRemainingCooldownTime(serverData.lastBump, BUMP_COOLDOWN);
         const formattedTime = formatRemainingTime(remainingTime);
         return interaction.reply({
-            content: `❌ Vous devez attendre encore ${formattedTime} avant de pouvoir bump à nouveau.`,
+            content: `<:Erreur:1343303750336385185> Vous devez attendre encore ${formattedTime} avant de pouvoir bump à nouveau.`,
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -519,7 +556,7 @@ async function sendBump(interaction, serverData, user, guildId, cooldown) {
         embed.addFields({ name: 'Badge du Serveur:', value: `${badgeEmoji} **${badge}**`, inline: true });
         embed.addFields({
             name: 'Évolution du Badge:',
-            value: `🔄 **${bumpForNextBadge.toFixed(2)}%**\n${'🟩'.repeat(Math.floor(bumpForNextBadge / 10))}${'⬛'.repeat(10 - Math.floor(bumpForNextBadge / 10))}`,
+            value: `🔄 **${bumpForNextBadge.toFixed(2)}%**\n${'▰'.repeat(Math.floor(bumpForNextBadge / 10))}${'▱'.repeat(10 - Math.floor(bumpForNextBadge / 10))}`,
             inline: false
         });
     }
@@ -529,7 +566,7 @@ async function sendBump(interaction, serverData, user, guildId, cooldown) {
 
     // Ajout des boutons
     const joinButton = new ButtonBuilder()
-        .setLabel('Rejoindre le serveur')
+        .setLabel('Rejoindre ce serveur')
         .setURL(serverData.inviteLink)
         .setStyle(ButtonStyle.Link);
 
@@ -539,7 +576,7 @@ async function sendBump(interaction, serverData, user, guildId, cooldown) {
         .setStyle(ButtonStyle.Link);
 
     const voteExobumpButton = new ButtonBuilder()
-        .setLabel('Voter pour Exobump')
+        .setLabel('Voter Exobump')
         .setURL('https://discord.ly/exobump')
         .setStyle(ButtonStyle.Link);
 
@@ -570,19 +607,11 @@ async function sendBump(interaction, serverData, user, guildId, cooldown) {
     // Mise à jour des données de l'utilisateur
     if (!serverData.userData[user.id]) serverData.userData[user.id] = { bumpCount: 0, xp: 0, voteCount: 0, lastLevel: 0 };
     serverData.userData[user.id].bumpCount += 1;
-    serverData.userData[user.id].xp += XP_PER_BUMP;
+    const randomXP = getRandomXP(); // Utilisez la fonction pour obtenir un XP aléatoire
+    serverData.userData[user.id].xp += randomXP;
     const newLevel = calculateLevel(serverData.userData[user.id].xp);
     const xpForNextLevel = calculateXPForNextLevel(serverData.userData[user.id].xp);
     await assignRoleBasedOnLevel(guild, user, newLevel);
-
-    // Vérification du passage de niveau
-    if (serverData.userData[user.id].lastLevel !== undefined && newLevel > serverData.userData[user.id].lastLevel) {
-        interaction.followUp({
-            content: `🎉 Félicitations, ${user.tag} ! Vous êtes passé au niveau ${newLevel} ! 🎉`,
-            flags: [MessageFlags.Ephemeral]
-        });
-    }
-    serverData.userData[user.id].lastLevel = newLevel;
 
     // Gestion des rappels
     if (serverData.reminders) {
@@ -607,7 +636,7 @@ async function sendBump(interaction, serverData, user, guildId, cooldown) {
     // Réponse à l'interaction
     const responseEmbed = new EmbedBuilder()
         .setTitle('Bump réussi !')
-        .setDescription(`✅ Le bump vient d’être envoyé avec succès !\nLe serveur a actuellement un total de **${serverData.bumpCount}** bump(s).\nN’oubliez pas que vous pouvez désactiver les rappels de bump en utilisant la commande </ping_config:1322269424832479284>.\n\nVous avez gagné **${XP_PER_BUMP} XP** !\nNiveau actuel: **${newLevel}**\nXP pour le prochain niveau: **${xpForNextLevel}**`)
+        .setDescription(`<:Valider:1343303723853676606> Le bump vient d’être envoyé avec succès !\nLe serveur a actuellement un total de **${serverData.bumpCount}** bump(s).\nN’oubliez pas que vous pouvez désactiver les rappels de bump en utilisant la commande </ping_config:1322269424832479284>.\n\nVous avez gagné **${randomXP} XP** !\nNiveau actuel: **${newLevel}**\nXP pour le prochain niveau: **${xpForNextLevel}**`)
         .setImage('https://i.imgur.com/Qy5DRuq.jpeg')
         .setFooter({ text: `${guild.name}`, iconURL: guild.iconURL({ dynamic: true }) })
         .setTimestamp()
@@ -642,7 +671,7 @@ async function updateQueueEmbed(channelId) {
     } else {
         embed = new EmbedBuilder()
             .setDescription(`
-        ✅ Envois réussis: **${successPercentage}%** (${totalBumps} réussis)\t ❌ Envois échoués: **${failurePercentage}%** (${totalFailedBumps} échoués)
+        <:Valider:1343303723853676606> Envois réussis: **${successPercentage}%** (${totalBumps} réussis)\t <:Erreur:1343303750336385185> Envois échoués: **${failurePercentage}%** (${totalFailedBumps} échoués)
         `)
             .setColor('#00AAFF');
     }
@@ -683,7 +712,7 @@ async function handlePingConfigCommand(interaction, serverData) {
     dataChanged = true;
     await saveDataIfChanged();
     interaction.reply({
-        content: `🕒 Les rappels sont maintenant ${serverData.reminders ? '✅ activés' : '❌ désactivés'}.`,
+        content: `🕒 Les rappels sont maintenant ${serverData.reminders ? '<:Valider:1343303723853676606> activés' : '<:Erreur:1343303750336385185> désactivés'}.`,
         flags: [MessageFlags.Ephemeral]
     });
 }
@@ -691,7 +720,7 @@ async function handlePingConfigCommand(interaction, serverData) {
 async function handleBumpToggleCommand(interaction, serverData) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
         return interaction.reply({
-            content: '❌ Vous devez être administrateur pour utiliser cette commande.',
+            content: '<:Erreur:1343303750336385185> Vous devez être administrateur pour utiliser cette commande.',
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -699,36 +728,61 @@ async function handleBumpToggleCommand(interaction, serverData) {
     dataChanged = true;
     await saveDataIfChanged();
     interaction.reply({
-        content: `🤖 Le bot est maintenant ${serverData.enabled ? '✅ activé' : '❌ désactivé'}.`,
+        content: `🤖 Le bot est maintenant ${serverData.enabled ? '<:Valider:1343303723853676606> activé' : '<:Erreur:1343303750336385185> désactivé'}.`,
         flags: [MessageFlags.Ephemeral]
     });
 }
 
 async function handleTopServerCommand(interaction) {
+    // Vérifier si data et data.servers existent
+    if (!data || !data.servers) {
+        return interaction.reply({
+            content: '<:Erreur:1343303750336385185> Les données ne sont pas disponibles pour le moment.',
+            flags: [MessageFlags.Ephemeral]
+        });
+    }
+
     const totalAdViews = Object.values(data.servers).reduce((acc, serverConfig) => acc + (serverConfig.adViews || 0), 0);
     const topServers = Object.entries(data.servers)
         .filter(([serverId, serverConfig]) => !isNaN(serverConfig.bumpCount) && !isNaN(serverConfig.voteCount))
         .sort((a, b) => (b[1].bumpCount || 0) + (b[1].voteCount || 0) - (a[1].bumpCount || 0) + (a[1].voteCount || 0))
-        .slice(0, 10)
-        .map(([serverId, serverConfig], index) => {
+        .slice(0, 10);
+
+    const labels = topServers.map(([serverId], index) => `#${index + 1} ${client.guilds.cache.get(serverId)?.name || 'Serveur inconnu'}`);
+    const dataPoints = topServers.map(([, serverConfig]) => serverConfig.bumpCount || 0);
+
+    // Générer le graphique
+    const chartBuffer = await generateBarChart(labels, dataPoints, 'Top Serveurs par Bumps');
+
+    // Créer un fichier attaché
+    const attachment = new AttachmentBuilder(chartBuffer, { name: 'chart.png' });
+
+    const embed = new EmbedBuilder()
+        .setTitle('🏆 Top 10 Meilleurs Serveurs')
+        .setDescription(topServers.map(([serverId, serverConfig], index) => {
             const guild = client.guilds.cache.get(serverId);
             const memberCount = guild ? guild.memberCount : 'N/A';
             const inviteLink = serverConfig.inviteLink || '#';
             const reputation = totalAdViews > 0 ? ((serverConfig.adViews / totalAdViews) * 100).toFixed(2) : 0;
             return `${index + 1}. **${guild?.name || 'Serveur inconnu'}**\nID du serveur: ${serverId}\nUtilisateurs: **${memberCount}**\nBump(s): **${serverConfig.bumpCount || 0}**\nVote(s): **${serverConfig.voteCount || 0}**\nRéputation: **${reputation}%**\n[Rejoindre le serveur](${inviteLink})`;
-        })
-        .join('\n\n');
-    const embed = new EmbedBuilder()
-        .setTitle('🏆 Top 10 Meilleurs Serveurs')
-        .setDescription(topServers || 'Aucun serveur n\'a encore été bumpé ou voté.')
+        }).join('\n\n'))
         .setTimestamp()
-        .setColor('#FFD700');
-    interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
+        .setColor('#FFD700')
+        .setImage('attachment://chart.png');
+
+    await interaction.reply({ embeds: [embed], files: [attachment], flags: [MessageFlags.Ephemeral] });
 }
 
 async function handleTopUserCommand(interaction, guildId) {
+    // Vérifier si data et data.servers existent
+    if (!data || !data.servers || !data.servers[guildId] || !data.servers[guildId].userData) {
+        return interaction.reply({
+            content: '<:Erreur:1343303750336385185> Les données ne sont pas disponibles pour le moment.',
+            flags: [MessageFlags.Ephemeral]
+        });
+    }
+
     const serverData = data.servers[guildId];
-    if (!serverData.userData) serverData.userData = {};
     const topUsers = Object.entries(serverData.userData)
         .map(([userId, userData]) => {
             const totalBumps = userData.bumpCount || 0;
@@ -739,24 +793,34 @@ async function handleTopUserCommand(interaction, guildId) {
         })
         .filter(([userId, totalBumps]) => !isNaN(totalBumps))
         .sort((a, b) => b[1] - a[1])
-        .slice(0, 10)
-        .map(([userId, totalBumps, xp, level, totalVotes], index) => {
-            const user = client.users.cache.get(userId);
-            return `${index + 1}. **${user?.tag || 'Utilisateur inconnu'}**\nID de l'utilisateur: ${userId}\nBump(s): **${totalBumps}**\nVote(s): **${totalVotes}**\nXP: **${xp}**\nNiveau: **${level}**\n[Voir le profil](discord://-/users/${userId})`;
-        })
-        .join('\n\n');
+        .slice(0, 10);
+
+    const labels = topUsers.map(([userId], index) => `#${index + 1} ${client.users.cache.get(userId)?.username || 'Inconnu'}`);
+    const dataPoints = topUsers.map(([, totalBumps]) => totalBumps);
+
+    // Générer le graphique
+    const chartBuffer = await generateBarChart(labels, dataPoints, 'Top Utilisateurs par Bumps');
+
+    // Créer un fichier attaché
+    const attachment = new AttachmentBuilder(chartBuffer, { name: 'chart.png' });
+
     const embed = new EmbedBuilder()
         .setTitle('🏆 Top 10 Meilleurs Utilisateurs')
-        .setDescription(topUsers || 'Aucun utilisateur n\'a encore bumpé.')
+        .setDescription(topUsers.map(([userId, totalBumps, xp, level, totalVotes], index) => {
+            const user = client.users.cache.get(userId);
+            return `${index + 1}. **${user?.tag || 'Utilisateur inconnu'}**\nID de l'utilisateur: ${userId}\nBump(s): **${totalBumps}**\nVote(s): **${totalVotes}**\nXP: **${xp}**\nNiveau: **${level}**\n[Voir le profil](discord://-/users/${userId})`;
+        }).join('\n\n'))
         .setTimestamp()
-        .setColor('#FFD700');
-    interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
+        .setColor('#FFD700')
+        .setImage('attachment://chart.png');
+
+    await interaction.reply({ embeds: [embed], files: [attachment], flags: [MessageFlags.Ephemeral] });
 }
 
 async function handleBumpConfigCommand(interaction, serverData) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
         return interaction.reply({
-            content: '❌ Vous devez être administrateur pour utiliser cette commande.',
+            content: '<:Erreur:1343303750336385185> Vous devez être administrateur pour utiliser cette commande.',
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -788,7 +852,7 @@ async function handleBumpConfigModalSubmit(interaction, serverData) {
 
     // Vérification de la longueur minimale de la description
     if (description.length < 400) {
-        return interaction.reply({ content: '❌ La description doit contenir au moins 400 caractères.', flags: [MessageFlags.Ephemeral] });
+        return interaction.reply({ content: '<:Erreur:1343303750336385185> La description doit contenir au moins 400 caractères.', flags: [MessageFlags.Ephemeral] });
     }
 
     // Expression régulière pour les domaines interdits
@@ -806,38 +870,38 @@ async function handleBumpConfigModalSubmit(interaction, serverData) {
 
     for (const link of allLinks) {
         if (forbiddenDomainsRegex.test(link)) {
-            return interaction.reply({ content: '❌ Le lien fourni est interdit.', flags: [MessageFlags.Ephemeral] });
+            return interaction.reply({ content: '<:Erreur:1343303750336385185> Le lien fourni est interdit.', flags: [MessageFlags.Ephemeral] });
         }
     }
 
     if (bannerLink && !/^https?:\/\/.+/.test(bannerLink)) {
-        return interaction.reply({ content: '❌ Le lien de la bannière n\'est pas valide.', flags: [MessageFlags.Ephemeral] });
+        return interaction.reply({ content: '<:Erreur:1343303750336385185> Le lien de la bannière n\'est pas valide.', flags: [MessageFlags.Ephemeral] });
     }
 
     serverData.description = description;
     serverData.bannerLink = bannerLink;
     dataChanged = true;
     await saveDataIfChanged();
-    interaction.reply({ content: '✅ Configuration mise à jour avec succès.', flags: [MessageFlags.Ephemeral] });
+    interaction.reply({ content: '<:Valider:1343303723853676606> Configuration mise à jour avec succès.', flags: [MessageFlags.Ephemeral] });
 }
 
 async function handleBumpSetChannelCommand(interaction, serverData, channel) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
         return interaction.reply({
-            content: '❌ Vous devez être administrateur pour utiliser cette commande.',
+            content: '<:Erreur:1343303750336385185> Vous devez être administrateur pour utiliser cette commande.',
             flags: [MessageFlags.Ephemeral]
         });
     }
     serverData.bumpChannel = channel.id;
     dataChanged = true;
     await saveDataIfChanged();
-    interaction.reply({ content: '✅ Salon de bump configuré avec succès.', flags: [MessageFlags.Ephemeral] });
+    interaction.reply({ content: '<:Valider:1343303723853676606> Salon de bump configuré avec succès.', flags: [MessageFlags.Ephemeral] });
 }
 
 async function handleBumpPreviewCommand(interaction, serverData, guildId) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
         return interaction.reply({
-            content: '❌ Vous devez être administrateur pour utiliser cette commande.',
+            content: '<:Erreur:1343303750336385185> Vous devez être administrateur pour utiliser cette commande.',
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -855,6 +919,14 @@ async function handleBumpPreviewCommand(interaction, serverData, guildId) {
 }
 
 async function handleStatsBumpCommand(interaction) {
+    // Vérifier si data et data.servers existent
+    if (!data || !data.servers) {
+        return interaction.reply({
+            content: '<:Erreur:1343303750336385185> Les données ne sont pas disponibles pour le moment.',
+            flags: [MessageFlags.Ephemeral]
+        });
+    }
+
     const now = getCurrentTimestamp();
     const oneDay = 24 * 60 * 60 * 1000;
     const oneWeek = 7 * oneDay;
@@ -880,8 +952,17 @@ async function handleStatsBumpCommand(interaction) {
     }
 
     const averageBumps = stats.serverCount > 0 ? (stats.totalBumps / stats.serverCount).toFixed(2) : "0.00";
+
+    // Générer le graphique
+    const labels = ['Aujourd\'hui', 'Cette semaine', 'Ce mois-ci'];
+    const dataPoints = [stats.totalBumpsToday, stats.totalBumpsWeek, stats.totalBumpsMonth];
+    const chartBuffer = await generateBarChart(labels, dataPoints, 'Bumps par période');
+
+    // Créer un fichier attaché
+    const attachment = new AttachmentBuilder(chartBuffer, { name: 'chart.png' });
+
     const embed = new EmbedBuilder()
-        .setTitle('📈 Statistiques Détaillées des Bumps')
+        .setTitle('📈 Analyse Des Statistiques Détaillées')
         .setDescription(`
         **Statistiques Globales:**
         Serveurs actifs: **${stats.serverCount.toLocaleString()}**
@@ -895,51 +976,13 @@ async function handleStatsBumpCommand(interaction) {
         Bumps ce mois-ci: **${stats.totalBumpsMonth.toLocaleString()}**
 
         **Moyenne:**
-        Moyenne de bumps par serveur: **${averageBumps}%**
+        Moyenne de bumps par serveur: **${averageBumps}**
         `)
         .setColor('#00AAFF')
-        .setTimestamp();
+        .setTimestamp()
+        .setImage('attachment://chart.png');
 
-    const activityBar = createActivityBar(stats);
-    if (activityBar) {
-        embed.addFields({ name: 'Tendance d\'activité:', value: activityBar, inline: false });
-    }
-
-    await interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
-}
-
-function createActivityBar(stats) {
-    const todayMax = stats.totalBumpsToday;
-    const weekMax = stats.totalBumpsWeek / 7;
-    const monthMax = stats.totalBumpsMonth / 30;
-
-    const maxValue = Math.max(todayMax, weekMax, monthMax);
-    if (maxValue === 0) return null;
-
-    const todayPercent = (todayMax / maxValue) * 10;
-    const weekPercent = (weekMax / maxValue) * 10;
-    const monthPercent = (monthMax / maxValue) * 10;
-
-    // Création des barres de progression
-    const todayBar = '🟦'.repeat(Math.round(todayPercent)) + '⬜'.repeat(10 - Math.round(todayPercent));
-    const weekBar = '🟩'.repeat(Math.round(weekPercent)) + '⬜'.repeat(10 - Math.round(weekPercent));
-    const monthBar = '🟨'.repeat(Math.round(monthPercent)) + '⬜'.repeat(10 - Math.round(monthPercent));
-
-    // Ajout de pourcentages pour plus de clarté
-    const todayPercentage = (todayMax / maxValue * 100).toFixed(2);
-    const weekPercentage = (weekMax / maxValue * 100).toFixed(2);
-    const monthPercentage = (monthMax / maxValue * 100).toFixed(2);
-
-    return `
-**Aujourd'hui (${todayPercentage}%) :**
-${todayBar}
-
-**Cette semaine (${weekPercentage}%) :**
-${weekBar}
-
-**Ce mois (${monthPercentage}%) :**
-${monthBar}
-    `;
+    await interaction.reply({ embeds: [embed], files: [attachment], flags: [MessageFlags.Ephemeral] });
 }
 
 async function handleVoteCommand(interaction, serverData, user, guildId) {
@@ -949,7 +992,7 @@ async function handleVoteCommand(interaction, serverData, user, guildId) {
         const remainingTime = getRemainingCooldownTime(serverData.lastVote || 0, VOTE_COOLDOWN);
         const formattedTime = formatRemainingTime(remainingTime);
         return interaction.reply({
-            content: `❌ Vous devez attendre encore ${formattedTime} avant de pouvoir voter à nouveau.`,
+            content: `<:Erreur:1343303750336385185> Vous devez attendre encore ${formattedTime} avant de pouvoir voter à nouveau.`,
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -961,11 +1004,68 @@ async function handleVoteCommand(interaction, serverData, user, guildId) {
     dataChanged = true;
     const responseEmbed = new EmbedBuilder()
         .setTitle('Vote réussi !')
-        .setDescription(`✅ Le vote vient d’être enregistré avec succès !\nLe serveur a actuellement un total de **${serverData.voteCount}** vote(s).`)
+        .setDescription(`<:Valider:1343303723853676606> Le vote vient d’être enregistré avec succès !\nLe serveur a actuellement un total de **${serverData.voteCount}** vote(s).`)
         .setImage('https://i.imgur.com/8a9Mc6F.jpeg')
         .setFooter({ text: `${interaction.guild.name}`, iconURL: interaction.guild.iconURL({ dynamic: true }) })
         .setTimestamp()
         .setColor('#00AAFF');
     interaction.reply({ embeds: [responseEmbed], flags: [MessageFlags.Ephemeral] });
     await saveDataIfChanged();
+}
+
+async function handleHelpCommand(interaction) {
+    const embed = new EmbedBuilder()
+        .setTitle('📜 Liste des commandes disponibles')
+        .setDescription('Voici la liste des commandes que vous pouvez utiliser avec ce bot :')
+        .setColor('#00AAFF')
+        .setTimestamp();
+
+    commands.forEach(command => {
+        let permissions = '👤 Utilisateur';
+        if (command.name === 'bump_toggle' || command.name === 'bump_config' || command.name === 'bump_set_channel' || command.name === 'bump_preview') {
+            permissions = '🛡️ Admin';
+        }
+        embed.addFields({ name: `🔹 /${command.name}`, value: `📝 **Description:** ${command.description}\n🔑 **Permissions:** ${permissions}` });
+    });
+
+    interaction.reply({ embeds: [embed], flags: [MessageFlags.Ephemeral] });
+}
+
+async function handleBotInfo(interaction) {
+  function createBotInfoEmbed() {
+    const uptime = process.uptime();
+    const days = Math.floor(uptime / 86400);
+    const hours = Math.floor((uptime % 86400) / 3600);
+    const minutes = Math.floor((uptime % 3600) / 60);
+    const seconds = Math.floor(uptime % 60);
+
+    const memoryUsage = process.memoryUsage();
+    const ramUsage = memoryUsage.rss / 1024 / 1024;
+    const totalRam = os.totalmem() / 1024 / 1024;
+
+    const cpuUsage = process.cpuUsage();
+    const totalCpuUsage = (cpuUsage.user + cpuUsage.system) / 1000;
+    const totalCpu = os.cpus().length;
+
+    const botPing = Date.now() - interaction.createdTimestamp;
+    const apiPing = interaction.client.ws.ping;
+
+    const nodeVersion = process.version;
+
+return new EmbedBuilder()
+  .setTitle('📊 Statistiques et Performances du Serveur Exobump')
+  .setColor('Blue')
+  .addFields(
+    { name: '🔧 Node.js Version', value: `\`\`\`${nodeVersion}\`\`\``, inline: true },
+    { name: '🔧 Discord.js Version', value: `\`\`\`${discordJsVersion}\`\`\``, inline: true },
+    { name: '⏳ Uptime', value: `\`\`\`${days}j ${hours}h ${minutes}m ${seconds}s\`\`\``, inline: false },
+    { name: '💾 RAM Usage', value: `\`\`\`${ramUsage.toFixed(2)}MB / ${totalRam.toFixed(2)}MB\`\`\``, inline: true },
+    { name: '💿 CPU Usage', value: `\`\`\`${(totalCpuUsage / totalCpu).toFixed(2)}%\`\`\``, inline: true },
+    { name: '📡 Connexion', value: `\`\`\`Shard #0 | Bot Ping: ${botPing}ms | API Ping: ${apiPing}ms\`\`\``, inline: false },
+    { name: '💻 Développeur', value: `\`\`\`{𝐃𝐄𝐕} 𝐄𝐗𝐎𝐁𝐎𝐓\`\`\``, inline: true },
+    { name: '⚙️ Bot Version', value: `\`\`\`v1.1.4\`\`\``, inline: true }
+  );
+  }
+
+  await interaction.reply({ embeds: [createBotInfoEmbed()], flags: [MessageFlags.Ephemeral] });
 }
