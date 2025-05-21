@@ -118,6 +118,11 @@ async function loadData() {
 
 async function saveData() {
     try {
+        // Vérifiez si la connexion est ouverte
+        if (!connection || connection.state === 'disconnected') {
+            await connectToDatabase(); // Reconnectez-vous si la connexion est fermée
+        }
+
         const serverValues = [];
         const userValues = [];
 
@@ -178,7 +183,9 @@ async function saveData() {
 
         console.log('✅ Données sauvegardées dans MySQL.');
     } catch (error) {
-        await connection.rollback();
+        if (connection && connection.state !== 'disconnected') {
+            await connection.rollback();
+        }
         console.error("⚠️ Erreur lors de la sauvegarde des données dans MySQL:", error);
         throw error;
     }
@@ -538,9 +545,13 @@ async function sendBump(interaction, serverData, user, guildId, cooldown) {
     // Calcul de la progression vers le prochain badge
     const bumpForNextBadge = ((serverData.bumpCount - currentBadgeThreshold) / (nextBadgeThreshold - currentBadgeThreshold)) * 100;
 
+    // Vérification des fonctionnalités du serveur
+    const isPartnered = guild.features.includes('PARTNERED');
+    const isVerified = guild.features.includes('VERIFIED');
+
     // Création de l'embed
     const embed = new EmbedBuilder()
-        .setTitle(`${guild.name} vient d'être bump !`)
+        .setTitle(`${isPartnered ? '<:Partner:1349763541531361310>' : ''} ${isVerified ? '<:Verified:1349763531393994823>' : ''} ${guild.name} vient d'être bump !`)
         .setDescription(serverData.description || 'Aucune description fournie.')
         .setImage(serverData.bannerLink || null)
         .setFooter({ text: `Bump par ${user.tag}`, iconURL: user.displayAvatarURL({ dynamic: true }) })
@@ -1053,7 +1064,7 @@ async function handleBotInfo(interaction) {
     const nodeVersion = process.version;
 
 return new EmbedBuilder()
-  .setTitle('📊 Statistiques et Performances du Serveur Exobump')
+  .setTitle('📊 Statistiques et Performances Exobump')
   .setColor('Blue')
   .addFields(
     { name: '🔧 Node.js Version', value: `\`\`\`${nodeVersion}\`\`\``, inline: true },
