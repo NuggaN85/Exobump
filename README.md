@@ -1,4 +1,4 @@
-**`Mise à jour : version 1.1.3`**
+**`Mise à jour : version 1.1.4`**
 
 ### **Fonctionnalités du Bot Bump**
 
