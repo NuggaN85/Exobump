@@ -1,55 +1,93 @@
 **`Mise à jour : version 1.1.4`**
 
-### **Fonctionnalités du Bot Bump**
+# Exobump Discord Bot
 
-### **1. Commandes Principales**
-- **`/bump`** : Promouvoir votre serveur dans tous les salons configurés.  
-  - Cooldown : 1 heure.  
-  - Gain d'XP et progression de niveau.  
-  - Badges de serveur (Promoteur Junior, Promoteur Avancé, Promoteur Élite, etc.).  
+Exobump est un bot Discord conçu pour aider à promouvoir les serveurs Discord en permettant aux utilisateurs de "bumper" leurs serveurs, c'est-à-dire de les faire remonter dans les listes pour plus de visibilité.
 
-- **`/vote`** : Voter pour votre serveur.  
-  - Cooldown : 24 heures.  
-  - Augmente la visibilité du serveur.  
+## Description
 
-- **`/top_server`** : Affiche le top 10 des serveurs les plus bumpés.  
-- **`/top_user`** : Affiche le top 10 des utilisateurs les plus actifs.  
+Exobump est un bot Discord qui permet aux utilisateurs de promouvoir leurs serveurs en les "bumpant". Cela envoie un message promotionnel dans des canaux dédiés sur d'autres serveurs, augmentant ainsi la visibilité et attirant de nouveaux membres. Le bot offre également des fonctionnalités de suivi des bumps, des votes, et des statistiques détaillées.
 
-### **2. Configuration (Admin uniquement)**
-- **`/bump_config`** : Configurer la description et la bannière du bump.  
-- **`/bump_set_channel`** : Définir le salon où les bumps seront envoyés.  
-- **`/bump_toggle`** : Activer/désactiver le bot sur le serveur.  
-- **`/ping_config`** : Activer/désactiver les rappels de bump.  
+## Fonctionnalités
 
-### **3. Statistiques et Prévisualisation**
-- **`/stats_bump`** : Affiche des statistiques détaillées (bumps, votes, vues, etc.).  
-- **`/bump_preview`** : Aperçu du bump avant envoi.  
+- **Bump de Serveur** : Envoyez des messages promotionnels pour votre serveur.
+- **Configuration de Bump** : Configurez la description et la bannière de votre serveur pour les bumps.
+- **Statistiques** : Suivez les statistiques de bumps, de votes, et de vues publicitaires.
+- **Rappels** : Activez ou désactivez les rappels pour bump votre serveur.
+- **Classements** : Voir les meilleurs serveurs et utilisateurs en termes de bumps.
+- **Gestion des Canaux** : Définissez le canal où les bumps doivent être envoyés.
+- **Système de Niveaux** : Gagnez de l'XP et montez de niveau en bumpant votre serveur.
+- **Rôles Basés sur les Niveaux** : Obtenez des rôles spéciaux en fonction de votre niveau.
 
-### **4. Fonctionnalités Automatiques**
-- **Réinitialisation des compteurs** :  
-  - Quotidienne, hebdomadaire et mensuelle.  
-- **Création d'invitations** : Une invitation est automatiquement créée pour chaque serveur.  
-- **Attribution de rôles** : Rôles basés sur le niveau d'XP des utilisateurs.  
+## Prérequis
 
-### **5. Sécurité et Limites**
-- **Rate Limiting** : Limite de 5 commandes par utilisateur par minute.  
-- **Permissions** : Les commandes de configuration sont réservées aux administrateurs.  
+- Node.js (version 16 ou supérieure)
+- Un bot Discord (créé via le [Portail Développeur Discord](https://discord.com/developers/applications))
+- Une base de données MySQL
+- Les permissions nécessaires pour ajouter le bot à vos serveurs
 
-### **Comment Utiliser le Bot ?**
-1. Créé une applications sur le [portail dev discord](https://discord.com/developers/applications).
-2. Modifier le fichier **`.env`** pour mettre les informations.
-3. Uploader la base **SQL** sur votre **phpMyAdmin**.
-4. Invitez le bot sur votre serveur.  
-5. Configurez le salon de bump avec **`/bump_set_channel`**.  
-6. Personnalisez votre bump avec **`/bump_config`**.  
-7. Utilisez **`/bump`** pour promouvoir votre serveur.
+## Installation
 
---------------------------------------------------------------------------------------------------------------------------------------
+1. Clonez ce dépôt sur votre machine locale.
+2. Installez les dépendances nécessaires en exécutant `npm install`.
+3. Créez un fichier `.env` à la racine du projet et ajoutez vos variables d'environnement :
 
-## <strong>❤️</strong> (Contribuer) <strong>❤️</strong>
+```plaintext
+DISCORD_TOKEN=VOTRE_TOKEN_DE_BOT
+CLIENT_ID=VOTRE_CLIENT_ID
+MYSQL_HOST=VOTRE_HOST_MYSQL
+MYSQL_USER=VOTRE_UTILISATEUR_MYSQL
+MYSQL_PASSWORD=VOTRE_MOT_DE_PASSE_MYSQL
+MYSQL_DATABASE=VOTRE_BASE_DE_DONNEES_MYSQL
+```
+
+4. Exécutez le bot avec la commande `node index.js`.
+
+## Commandes
+
+Le bot utilise des commandes slash pour interagir avec les utilisateurs. Voici les commandes disponibles :
+
+- `/bump` : Envoyer un bump à tous les serveurs connectés.
+- `/ping_config` : Activer ou désactiver le rappel pour bump.
+- `/bump_toggle` : Activer ou désactiver le bot sur ce serveur (admin uniquement).
+- `/top_server` : Voir les meilleurs serveurs bumpés.
+- `/top_user` : Voir les meilleurs utilisateurs bumpers.
+- `/bump_config` : Configurer la description et le lien bannière (admin uniquement).
+- `/bump_set_channel` : Définir le salon où les bumps doivent être envoyés (admin uniquement).
+- `/bump_preview` : Voir un aperçu du bump (admin uniquement).
+- `/stats_bump` : Afficher les statistiques détaillées des bumps.
+- `/vote` : Voter pour le serveur.
+- `/help` : Affiche la liste des commandes disponibles.
+- `/botinfo` : Affiche les informations du bot.
+
+## Utilisation
+
+1. Invitez le bot sur votre serveur Discord en utilisant le lien OAuth2 généré dans le [Portail Développeur Discord](https://discord.com/developers/applications).
+2. Utilisez la commande `/bump_config` pour configurer la description et la bannière de votre serveur.
+3. Utilisez la commande `/bump_set_channel` pour définir le canal où les bumps doivent être envoyés.
+4. Utilisez la commande `/bump` pour envoyer un bump promotionnel pour votre serveur.
+5. Utilisez les autres commandes pour gérer les rappels, voir les statistiques, et plus encore.
+
+## Contribution
+
+Les contributions sont les bienvenues ! Pour contribuer à ce projet, veuillez suivre ces étapes :
+
+1. Fork ce dépôt.
+2. Créez une branche pour votre fonctionnalité (`git checkout -b feature/AmazingFeature`).
+3. Commitez vos changements (`git commit -m 'Add some AmazingFeature'`).
+4. Poussez vers la branche (`git push origin feature/AmazingFeature`).
+5. Ouvrez une Pull Request.
+
+## Licence
+
+Ce projet est sous licence MIT. Voir le fichier [LICENSE](LICENSE) pour plus de détails.
+
+## Contact
+
+Pour toute question ou suggestion, n'hésitez pas à ouvrir une issue ou à me contacter directement.
+
+---
+
+© 2023 Ludovic Rose. Tous droits réservés.
 
 [![Donate](https://img.shields.io/badge/paypal-donate-yellow.svg?style=flat)](https://www.paypal.me/nuggan85) [![v1.1.4](http://img.shields.io/badge/zip-v1.1.4-blue.svg)](https://github.com/NuggaN85/Exobump/archive/master.zip) [![GitHub license](https://img.shields.io/github/license/NuggaN85/Exobump)](https://github.com/NuggaN85/Exobump)
-
-<a target="_blank" href="https://www.dmca.com/Protection/Status.aspx?ID=e1725bf3-1ec4-44bb-b65e-0a20fd4919fa&refurl=https://github.com/NuggaN85/bumper" title="DMCA.com Protection Status" class="dmca-badge"> <img src ="https://images.dmca.com/Badges/dmca_protected_sml_120d.png?ID=e1725bf3-1ec4-44bb-b65e-0a20fd4919fa"  alt="DMCA.com Protection Status" /></a>
-
---------------------------------------------------------------------------------------------------------------------------------------
