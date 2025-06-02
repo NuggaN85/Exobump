@@ -18,6 +18,7 @@ Exobump est un bot Discord qui permet aux utilisateurs de promouvoir leurs serve
 - **Gestion des Canaux** : Définissez le canal où les bumps doivent être envoyés.
 - **Système de Niveaux** : Gagnez de l'XP et montez de niveau en bumpant votre serveur.
 - **Rôles Basés sur les Niveaux** : Obtenez des rôles spéciaux en fonction de votre niveau.
+- **Commandes Slash** : Utilisation de commandes slash pour interagir avec le bot.
 
 ## Prérequis
 
