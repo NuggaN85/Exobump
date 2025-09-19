@@ -68,7 +68,8 @@ Le bot utilise des commandes slash pour interagir avec les utilisateurs. Voici l
 2. Utilisez la commande `/bump_config` pour configurer la description et la bannière de votre serveur.
 3. Utilisez la commande `/bump_set_channel` pour définir le canal où les bumps doivent être envoyés.
 4. Utilisez la commande `/bump` pour envoyer un bump promotionnel pour votre serveur.
-5. Utilisez les autres commandes pour gérer les rappels, voir les statistiques, et plus encore.
+5. Utilisez la commande `/vote` : pour envoyer un vote pour votre serveur.
+6. Utilisez les autres commandes pour gérer les rappels, voir les statistiques, et plus encore.
 
 ## Contribution
 
