@@ -29,8 +29,8 @@ import { version as discordJsVersion } from 'discord.js';
 // Configuration et initialisation des variables d'environnement
 dotenv.config();
 
-if (!process.env.DISCORD_TOKEN || !process.env.CLIENT_ID) {
-    throw new Error("⚠️ Les variables d'environnement DISCORD_TOKEN et CLIENT_ID sont obligatoires.");
+if (!process.env.DISCORD_TOKEN || !process.env.CLIENT_ID || !process.env.DEVELOPER || !process.env.BOT_VERSION) {
+    throw new Error("⚠️ Les variables d'environnement DISCORD_TOKEN, CLIENT_ID, DEVELOPER et BOT_VERSION sont obligatoires.");
 }
 
 // Configuration des intents nécessaires
@@ -102,8 +102,7 @@ async function loadData() {
                 data.servers[row.guild_id].userData[row.user_id] = {
                     bumpCount: row.bump_count,
                     xp: row.xp,
-                    voteCount: row.vote_count,
-                    lastLevel: row.last_level
+                    voteCount: row.vote_count
                 };
             }
         });
@@ -133,9 +132,9 @@ async function saveData() {
 
                 if (serverData.userData && typeof serverData.userData === 'object') {
                     for (const [userId, userData] of Object.entries(serverData.userData)) {
-                        const { bumpCount, xp, voteCount, lastLevel } = userData;
+                        const { bumpCount, xp, voteCount } = userData;
 
-                        userValues.push([bumpCount, xp, voteCount, lastLevel, guildId, userId]);
+                        userValues.push([bumpCount, xp, voteCount, guildId, userId]);
                     }
                 }
             }
@@ -167,13 +166,12 @@ async function saveData() {
 
         if (userValues.length > 0) {
             await connection.query(
-                `INSERT INTO users (bump_count, xp, vote_count, last_level, guild_id, user_id)
+                `INSERT INTO users (bump_count, xp, vote_count, guild_id, user_id)
                 VALUES ?
                 ON DUPLICATE KEY UPDATE
                 bump_count = VALUES(bump_count),
                 xp = VALUES(xp),
-                vote_count = VALUES(vote_count),
-                last_level = VALUES(last_level)`,
+                vote_count = VALUES(vote_count)`,
                 [userValues]
             );
         }
@@ -424,7 +422,6 @@ async function createInviteIfNeeded(guild) {
     }
 }
 
-const LEVEL_UP_XP = 1000;
 const BUMP_COOLDOWN = 3600000; // 1 heure
 const VOTE_COOLDOWN = 86400000; // 24 heures
 
@@ -455,18 +452,6 @@ function formatRemainingTime(remainingTime) {
     } else {
         return `${remainingSeconds} seconde${remainingSeconds > 1 ? 's' : ''}`;
     }
-}
-
-function calculateLevel(xp) {
-    return Math.floor(xp / LEVEL_UP_XP);
-}
-
-function calculateXPForNextLevel(xp) {
-    return LEVEL_UP_XP - (xp % LEVEL_UP_XP);
-}
-
-function getRandomXP() {
-    return Math.floor(Math.random() * 10) + 1;
 }
 
 const bumpQueue = [];
@@ -615,13 +600,10 @@ async function sendBump(interaction, serverData, user, guildId, cooldown) {
     serverData.lastBump = now;
 
     // Mise à jour des données de l'utilisateur
-    if (!serverData.userData[user.id]) serverData.userData[user.id] = { bumpCount: 0, xp: 0, voteCount: 0, lastLevel: 0 };
+    if (!serverData.userData[user.id]) serverData.userData[user.id] = { bumpCount: 0, xp: 0, voteCount: 0 };
     serverData.userData[user.id].bumpCount += 1;
-    const randomXP = getRandomXP(); // Utilisez la fonction pour obtenir un XP aléatoire
+    const randomXP = Math.floor(Math.random() * 10) + 1; // Génération d'XP aléatoire
     serverData.userData[user.id].xp += randomXP;
-    const newLevel = calculateLevel(serverData.userData[user.id].xp);
-    const xpForNextLevel = calculateXPForNextLevel(serverData.userData[user.id].xp);
-    await assignRoleBasedOnLevel(guild, user, newLevel);
 
     // Gestion des rappels
     if (serverData.reminders) {
@@ -646,7 +628,7 @@ async function sendBump(interaction, serverData, user, guildId, cooldown) {
     // Réponse à l'interaction
     const responseEmbed = new EmbedBuilder()
         .setTitle('Bump réussi !')
-        .setDescription(`<:Valider:1343303723853676606> Le bump vient d’être envoyé avec succès !\nLe serveur a actuellement un total de **${serverData.bumpCount}** bump(s).\nN’oubliez pas que vous pouvez désactiver les rappels de bump en utilisant la commande </ping_config:1322269424832479284>.\n\nVous avez gagné **${randomXP} XP** !\nNiveau actuel: **${newLevel}**\nXP pour le prochain niveau: **${xpForNextLevel}**`)
+        .setDescription(`<:Valider:1343303723853676606> Le bump vient d’être envoyé avec succès !\nLe serveur a actuellement un total de **${serverData.bumpCount}** bump(s).\nN’oubliez pas que vous pouvez désactiver les rappels de bump en utilisant la commande </ping_config:1322269424832479284>.\n\nVous avez gagné **${randomXP} XP** !`)
         .setImage('https://i.imgur.com/Qy5DRuq.jpeg')
         .setFooter({ text: `${guild.name}`, iconURL: guild.iconURL({ dynamic: true }) })
         .setTimestamp()
@@ -694,26 +676,6 @@ async function updateQueueEmbed(channelId) {
         }
     } catch (error) {
         console.error('⚠️ Erreur lors de la mise à jour de l\'embed de la file d\'attente:', error);
-    }
-}
-
-async function assignRoleBasedOnLevel(guild, user, level) {
-    const roleNames = ['Bumper Débutant', 'Bumper Confirmé', 'Maître des Bumps', 'Légende du Bump', 'Dieu du Bump'];
-    const roleColors = ['#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FFA500'];
-    for (let i = 0; i < roleNames.length; i++) {
-        let role = guild.roles.cache.find(r => r.name === roleNames[i]);
-        if (!role) {
-            role = await guild.roles.create({
-                name: roleNames[i],
-                color: roleColors[i],
-                reason: 'Création automatique de rôle pour le système de niveaux'
-            });
-        }
-        if (i === level - 1) {
-            await guild.members.cache.get(user.id).roles.add(role);
-        } else {
-            await guild.members.cache.get(user.id).roles.remove(role);
-        }
     }
 }
 
@@ -797,9 +759,8 @@ async function handleTopUserCommand(interaction, guildId) {
         .map(([userId, userData]) => {
             const totalBumps = userData.bumpCount || 0;
             const xp = userData.xp || 0;
-            const level = calculateLevel(xp);
             const totalVotes = userData.voteCount || 0;
-            return [userId, totalBumps, xp, level, totalVotes];
+            return [userId, totalBumps, xp, totalVotes];
         })
         .filter(([userId, totalBumps]) => !isNaN(totalBumps))
         .sort((a, b) => b[1] - a[1])
@@ -816,9 +777,9 @@ async function handleTopUserCommand(interaction, guildId) {
 
     const embed = new EmbedBuilder()
         .setTitle('🏆 Top 10 Meilleurs Utilisateurs')
-        .setDescription(topUsers.map(([userId, totalBumps, xp, level, totalVotes], index) => {
+        .setDescription(topUsers.map(([userId, totalBumps, xp, totalVotes], index) => {
             const user = client.users.cache.get(userId);
-            return `${index + 1}. **${user?.tag || 'Utilisateur inconnu'}**\nID de l'utilisateur: ${userId}\nBump(s): **${totalBumps}**\nVote(s): **${totalVotes}**\nXP: **${xp}**\nNiveau: **${level}**\n[Voir le profil](discord://-/users/${userId})`;
+            return `${index + 1}. **${user?.tag || 'Utilisateur inconnu'}**\nID de l'utilisateur: ${userId}\nBump(s): **${totalBumps}**\nVote(s): **${totalVotes}**\nXP: **${xp}**\n[Voir le profil](discord://-/users/${userId})`;
         }).join('\n\n'))
         .setTimestamp()
         .setColor('#FFD700')
@@ -1042,30 +1003,30 @@ async function handleHelpCommand(interaction) {
 }
 
 async function handleBotInfo(interaction) {
-  function createBotInfoEmbed() {
-    const uptime = process.uptime();
-    const days = Math.floor(uptime / 86400);
-    const hours = Math.floor((uptime % 86400) / 3600);
-    const minutes = Math.floor((uptime % 3600) / 60);
-    const seconds = Math.floor(uptime % 60);
+    function createBotInfoEmbed() {
+        const uptime = process.uptime();
+        const days = Math.floor(uptime / 86400);
+        const hours = Math.floor((uptime % 86400) / 3600);
+        const minutes = Math.floor((uptime % 3600) / 60);
+        const seconds = Math.floor(uptime % 60);
 
-    const botPing = Date.now() - interaction.createdTimestamp;
-    const apiPing = interaction.client.ws.ping;
+        const botPing = Date.now() - interaction.createdTimestamp;
+        const apiPing = interaction.client.ws.ping;
 
-    const nodeVersion = process.version;
+        const nodeVersion = process.version;
 
-    return new EmbedBuilder()
-      .setTitle('📊 Statistiques et Performances du Serveur Exobump')
-      .setColor('Blue')
-      .addFields(
-        { name: '🔧 Node.js Version', value: `\`\`\`${nodeVersion}\`\`\``, inline: true },
-        { name: '🔧 Discord.js Version', value: `\`\`\`${discordJsVersion}\`\`\``, inline: true },
-        { name: '⏳ Uptime', value: `\`\`\`${days}j ${hours}h ${minutes}m ${seconds}s\`\`\``, inline: false },
-        { name: '📡 Connexion', value: `\`\`\`Shard 0/1 | Bot Ping: ${botPing}ms | API Ping: ${apiPing}ms\`\`\``, inline: false },
-        { name: '💻 Développeur', value: `\`\`\`${process.env.DEVELOPER}\`\`\``, inline: true },
-        { name: '⚙️ Bot Version', value: `\`\`\`${process.env.BOT_VERSION}\`\`\``, inline: true }
-      );
-  }
+        return new EmbedBuilder()
+            .setTitle('📊 Statistiques et Performances du Serveur Exobump')
+            .setColor('Blue')
+            .addFields(
+                { name: '🔧 Node.js Version', value: `\`\`\`${nodeVersion}\`\`\``, inline: true },
+                { name: '🔧 Discord.js Version', value: `\`\`\`${discordJsVersion}\`\`\``, inline: true },
+                { name: '⏳ Uptime', value: `\`\`\`${days}j ${hours}h ${minutes}m ${seconds}s\`\`\``, inline: false },
+                { name: '📡 Connexion', value: `\`\`\`Shard 0/1 | Bot Ping: ${botPing}ms | API Ping: ${apiPing}ms\`\`\``, inline: false },
+                { name: '💻 Développeur', value: `\`\`\`${process.env.DEVELOPER}\`\`\``, inline: true },
+                { name: '⚙️ Bot Version', value: `\`\`\`${process.env.BOT_VERSION}\`\`\``, inline: true }
+            );
+    }
 
-  await interaction.reply({ embeds: [createBotInfoEmbed()], flags: [MessageFlags.Ephemeral] });
+    await interaction.reply({ embeds: [createBotInfoEmbed()], flags: [MessageFlags.Ephemeral] });
 }
