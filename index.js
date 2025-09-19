@@ -24,7 +24,6 @@ import { createConnection } from 'mysql2/promise';
 import { createCanvas } from 'canvas'; 
 import Chart from 'chart.js/auto';
 import schedule from 'node-schedule';
-import * as os from 'os';
 import { version as discordJsVersion } from 'discord.js';
 
 // Configuration et initialisation des variables d'environnement
@@ -249,7 +248,7 @@ const commands = [
     { name: 'botinfo', description: 'Affiche les informations du bot.', setDMPermission: false }
 ];
 
-client.once("ready", async () => {
+client.once("clientReady", async () => {
     console.log(`✅ Bot connecté en tant que ${client.user.tag}!`);
     await connectToDatabase();
     await loadData();
@@ -363,7 +362,7 @@ async function handleInteraction(interaction) {
         case 'stats_bump': await handleStatsBumpCommand(interaction); break;
         case 'vote': await handleVoteCommand(interaction, serverData, user, guildId); break;
         case 'help': await handleHelpCommand(interaction); break;
-        case "botinfo": await handleBotInfo(interaction); break;
+        case 'botinfo': await handleBotInfo(interaction); break;
         default: if (interaction.isModalSubmit() && interaction.customId === 'bumpConfigModal') await handleBumpConfigModalSubmit(interaction, serverData); break;
     }
     await saveDataIfChanged();
@@ -1050,32 +1049,22 @@ async function handleBotInfo(interaction) {
     const minutes = Math.floor((uptime % 3600) / 60);
     const seconds = Math.floor(uptime % 60);
 
-    const memoryUsage = process.memoryUsage();
-    const ramUsage = memoryUsage.rss / 1024 / 1024;
-    const totalRam = os.totalmem() / 1024 / 1024;
-
-    const cpuUsage = process.cpuUsage();
-    const totalCpuUsage = (cpuUsage.user + cpuUsage.system) / 1000;
-    const totalCpu = os.cpus().length;
-
     const botPing = Date.now() - interaction.createdTimestamp;
     const apiPing = interaction.client.ws.ping;
 
     const nodeVersion = process.version;
 
-return new EmbedBuilder()
-  .setTitle('📊 Statistiques et Performances Exobump')
-  .setColor('Blue')
-  .addFields(
-    { name: '🔧 Node.js Version', value: `\`\`\`${nodeVersion}\`\`\``, inline: true },
-    { name: '🔧 Discord.js Version', value: `\`\`\`${discordJsVersion}\`\`\``, inline: true },
-    { name: '⏳ Uptime', value: `\`\`\`${days}j ${hours}h ${minutes}m ${seconds}s\`\`\``, inline: false },
-    { name: '💾 RAM Usage', value: `\`\`\`${ramUsage.toFixed(2)}MB / ${totalRam.toFixed(2)}MB\`\`\``, inline: true },
-    { name: '💿 CPU Usage', value: `\`\`\`${(totalCpuUsage / totalCpu).toFixed(2)}%\`\`\``, inline: true },
-    { name: '📡 Connexion', value: `\`\`\`Shard #0 | Bot Ping: ${botPing}ms | API Ping: ${apiPing}ms\`\`\``, inline: false },
-    { name: '💻 Développeur', value: `\`\`\`{𝐃𝐄𝐕} 𝐄𝐗𝐎𝐁𝐎𝐓\`\`\``, inline: true },
-    { name: '⚙️ Bot Version', value: `\`\`\`v1.1.4\`\`\``, inline: true }
-  );
+    return new EmbedBuilder()
+      .setTitle('📊 Statistiques et Performances du Serveur Exobump')
+      .setColor('Blue')
+      .addFields(
+        { name: '🔧 Node.js Version', value: `\`\`\`${nodeVersion}\`\`\``, inline: true },
+        { name: '🔧 Discord.js Version', value: `\`\`\`${discordJsVersion}\`\`\``, inline: true },
+        { name: '⏳ Uptime', value: `\`\`\`${days}j ${hours}h ${minutes}m ${seconds}s\`\`\``, inline: false },
+        { name: '📡 Connexion', value: `\`\`\`Shard 0/1 | Bot Ping: ${botPing}ms | API Ping: ${apiPing}ms\`\`\``, inline: false },
+        { name: '💻 Développeur', value: `\`\`\`{𝐃𝐄𝐕} 𝐄𝐗𝐎𝐁𝐎𝐓\`\`\``, inline: true },
+        { name: '⚙️ Bot Version', value: `\`\`\`v1.1.4\`\`\``, inline: true }
+      );
   }
 
   await interaction.reply({ embeds: [createBotInfoEmbed()], flags: [MessageFlags.Ephemeral] });
