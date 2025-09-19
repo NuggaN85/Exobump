@@ -248,7 +248,7 @@ const commands = [
     { name: 'botinfo', description: 'Affiche les informations du bot.', setDMPermission: false }
 ];
 
-client.once("clientReady", async () => {
+client.once('ready', async () => {
     console.log(`✅ Bot connecté en tant que ${client.user.tag}!`);
     await connectToDatabase();
     await loadData();
@@ -668,7 +668,7 @@ async function updateQueueEmbed(channelId) {
 
     const servers = Object.values(data.servers);
     const totalBumps = servers.reduce((acc, server) => acc + (server.bumpCount || 0), 0);
-    const totalFailedBumps = servers.reduce((acc, server) => acc + (server.failedBumps || 0), 0);
+    const totalFailedBumps = 0; // Pas de logique pour failedBumps, définir à 0
     const totalBumpsAndFailed = totalBumps + totalFailedBumps;
     const successPercentage = totalBumpsAndFailed > 0 ? ((totalBumps / totalBumpsAndFailed) * 100).toFixed(2) : 0;
     const failurePercentage = totalBumpsAndFailed > 0 ? ((totalFailedBumps / totalBumpsAndFailed) * 100).toFixed(2) : 0;
@@ -755,7 +755,7 @@ async function handleTopServerCommand(interaction) {
     const totalAdViews = Object.values(data.servers).reduce((acc, serverConfig) => acc + (serverConfig.adViews || 0), 0);
     const topServers = Object.entries(data.servers)
         .filter(([serverId, serverConfig]) => !isNaN(serverConfig.bumpCount) && !isNaN(serverConfig.voteCount))
-        .sort((a, b) => (b[1].bumpCount || 0) + (b[1].voteCount || 0) - (a[1].bumpCount || 0) + (a[1].voteCount || 0))
+        .sort((a, b) => ((b[1].bumpCount || 0) + (b[1].voteCount || 0)) - ((a[1].bumpCount || 0) + (a[1].voteCount || 0)))
         .slice(0, 10);
 
     const labels = topServers.map(([serverId], index) => `#${index + 1} ${client.guilds.cache.get(serverId)?.name || 'Serveur inconnu'}`);
@@ -1062,8 +1062,8 @@ async function handleBotInfo(interaction) {
         { name: '🔧 Discord.js Version', value: `\`\`\`${discordJsVersion}\`\`\``, inline: true },
         { name: '⏳ Uptime', value: `\`\`\`${days}j ${hours}h ${minutes}m ${seconds}s\`\`\``, inline: false },
         { name: '📡 Connexion', value: `\`\`\`Shard 0/1 | Bot Ping: ${botPing}ms | API Ping: ${apiPing}ms\`\`\``, inline: false },
-        { name: '💻 Développeur', value: `\`\`\`{𝐃𝐄𝐕} 𝐄𝐗𝐎𝐁𝐎𝐓\`\`\``, inline: true },
-        { name: '⚙️ Bot Version', value: `\`\`\`v1.1.4\`\`\``, inline: true }
+        { name: '💻 Développeur', value: `\`\`\`${process.env.DEVELOPER}\`\`\``, inline: true },
+        { name: '⚙️ Bot Version', value: `\`\`\`${process.env.BOT_VERSION}\`\`\``, inline: true }
       );
   }
 
