@@ -4,26 +4,22 @@
   "description": "bump inter-serveur",
   "private": true,
   "type": "module",
-  "main": "index.js",
-  "engines": {
-      "node": ">=20.0.0"
-  },
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
     "update-deps": "npx npm-check-updates -u && npm install"
   },
   "dependencies": {
-    "discord.js": "^14.19.3",
-    "dotenv": "^16.5.0",
+    "discord.js": "^14.18.0",
+    "dotenv": "^16.4.7",
     "node-schedule": "^2.1.1",
-    "mysql2": "^3.14.1",
+    "mysql2": "^3.13.0",
     "canvas": "^3.1.0",
-    "chart.js": "^4.4.9"
+    "chart.js": "^4.4.8"
   },
   "devDependencies": {
-    "nodemon": "^3.1.10",
-    "npm-check-updates": "^18.0.1"
+    "nodemon": "^3.1.9",
+    "npm-check-updates": "^17.1.14"
   },
   "author": "EXOBOT",
   "license": "MIT"
