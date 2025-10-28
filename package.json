@@ -2,6 +2,7 @@
   "name": "bump inter-serveur",
   "version": "1.1.4",
   "description": "bump inter-serveur",
+  "homepage": "https://rl-informatique.fr",
   "private": true,
   "type": "module",
   "scripts": {
