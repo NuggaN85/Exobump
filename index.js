@@ -18,13 +18,13 @@ import {
     ChannelType,
     MessageFlags,
     PermissionFlagsBits,
-    AttachmentBuilder
+    AttachmentBuilder,
+    version as discordJsVersion
 } from 'discord.js';
 import { createConnection } from 'mysql2/promise';
 import { createCanvas } from 'canvas'; 
 import Chart from 'chart.js/auto';
 import schedule from 'node-schedule';
-import { version as discordJsVersion } from 'discord.js';
 
 // Configuration et initialisation des variables d'environnement
 dotenv.config();
