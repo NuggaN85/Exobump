@@ -1,7 +1,7 @@
 {
-  "name": "bump inter-serveur",
+  "name": "Exobump",
   "version": "1.1.4",
-  "description": "bump inter-serveur",
+  "description": "Boostez la visibilité de votre serveur grâce à l'interconnexion entre communautés.",
   "homepage": "https://rl-informatique.fr",
   "private": true,
   "type": "module",
