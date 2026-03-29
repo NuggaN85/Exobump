@@ -19,7 +19,7 @@ import {
     MessageFlags,
     PermissionFlagsBits,
     AttachmentBuilder,
-    version as discordJsVersion
+    version as discordJsVersion,
 } from 'discord.js';
 import { createConnection } from 'mysql2/promise';
 import { createCanvas } from 'canvas'; 
