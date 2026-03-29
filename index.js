@@ -35,8 +35,7 @@ if (!process.env.DISCORD_TOKEN || !process.env.CLIENT_ID || !process.env.DEVELOP
 // Configuration des intents nécessaires
 const intents = [
     GatewayIntentBits.Guilds,
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.GuildMembers
+    GatewayIntentBits.GuildMessages
 ];
 
 // Configuration des paramètres REST
