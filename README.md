@@ -93,7 +93,7 @@ Pour toute question ou suggestion, n'hésitez pas à ouvrir une issue ou à me c
 
 ## Contributions
 
-Un grand merci à [Alexis-katabump](https://github.com/Alexis-katabump/bump-bot-discord)
+Un grand merci à [Alexis-katabump](https://github.com/Alexis-katabump/bump-bot-discord) pour ça contribution (Amélioration du code)
 
 ---
 
