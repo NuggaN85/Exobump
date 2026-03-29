@@ -22,8 +22,7 @@ import {
     version as discordJsVersion,
 } from 'discord.js';
 import { createConnection } from 'mysql2/promise';
-import { createCanvas } from 'canvas'; 
-import Chart from 'chart.js/auto';
+import { createCanvas } from '@napi-rs/canvas';
 import schedule from 'node-schedule';
 
 // Configuration et initialisation des variables d'environnement
@@ -201,33 +200,91 @@ async function updatePresence() {
     client.user.setStatus('online');
 }
 
-// Fonction pour générer un graphique avec Chart.js
-async function generateBarChart(labels, data, title) {
-    const canvas = createCanvas(800, 400);
+// Fonction pour générer un graphique
+async function generateBarChart(labels, dataPoints, title) {
+    const width = 800;
+    const height = 400;
+    const canvas = createCanvas(width, height);
     const ctx = canvas.getContext('2d');
 
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: title,
-                data: data,
-                backgroundColor: 'rgba(54, 162, 235, 0.2)',
-                borderColor: 'rgba(54, 162, 235, 1)',
-                borderWidth: 1
-            }]
-        },
-        options: {
-            scales: {
-                y: {
-                    beginAtZero: true
-                }
-            }
+    const padding = { top: 40, right: 30, bottom: 80, left: 60 };
+    const chartWidth = width - padding.left - padding.right;
+    const chartHeight = height - padding.top - padding.bottom;
+    const maxValue = Math.max(...dataPoints, 1);
+
+    // Fond
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, width, height);
+
+    // Titre
+    ctx.fillStyle = '#333333';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(title, width / 2, 25);
+
+    // Grille et axe Y
+    ctx.strokeStyle = '#e0e0e0';
+    ctx.lineWidth = 1;
+    const ySteps = 5;
+    for (let i = 0; i <= ySteps; i++) {
+        const y = padding.top + chartHeight - (i / ySteps) * chartHeight;
+        ctx.beginPath();
+        ctx.moveTo(padding.left, y);
+        ctx.lineTo(padding.left + chartWidth, y);
+        ctx.stroke();
+        ctx.fillStyle = '#666666';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'right';
+        ctx.fillText(Math.round((i / ySteps) * maxValue), padding.left - 8, y + 4);
+    }
+
+    // Barres
+    const barWidth = (chartWidth / dataPoints.length) * 0.6;
+    const barSpacing = chartWidth / dataPoints.length;
+
+    dataPoints.forEach((value, index) => {
+        const barHeight = (value / maxValue) * chartHeight;
+        const x = padding.left + index * barSpacing + (barSpacing - barWidth) / 2;
+        const y = padding.top + chartHeight - barHeight;
+
+        // Couleur de la barre
+        ctx.fillStyle = 'rgba(54, 162, 235, 0.7)';
+        ctx.fillRect(x, y, barWidth, barHeight);
+
+        // Bordure de la barre
+        ctx.strokeStyle = 'rgba(54, 162, 235, 1)';
+        ctx.lineWidth = 1.5;
+        ctx.strokeRect(x, y, barWidth, barHeight);
+
+        // Valeur au-dessus de la barre
+        ctx.fillStyle = '#333333';
+        ctx.font = '12px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(value, x + barWidth / 2, y - 5);
+
+        // Label en dessous
+        ctx.fillStyle = '#555555';
+        ctx.font = '11px sans-serif';
+        ctx.textAlign = 'center';
+        const label = labels[index] || '';
+        const maxLabelWidth = barSpacing - 4;
+        if (ctx.measureText(label).width > maxLabelWidth) {
+            ctx.fillText(label.substring(0, 12) + '…', x + barWidth / 2, padding.top + chartHeight + 20);
+        } else {
+            ctx.fillText(label, x + barWidth / 2, padding.top + chartHeight + 20);
         }
     });
 
-    return canvas.toBuffer();
+    // Axe X et Y (lignes)
+    ctx.strokeStyle = '#333333';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding.left, padding.top);
+    ctx.lineTo(padding.left, padding.top + chartHeight);
+    ctx.lineTo(padding.left + chartWidth, padding.top + chartHeight);
+    ctx.stroke();
+
+    return canvas.toBuffer('image/png');
 }
 
 // Commandes et gestion des interactions
