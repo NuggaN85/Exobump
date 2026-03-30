@@ -379,7 +379,7 @@ async function handleInteraction(interaction) {
     if (!interaction.isCommand() && !interaction.isModalSubmit()) return;
     const { commandName, guildId, user } = interaction;
     if (checkRateLimit(user.id)) {
-        return interaction.reply({ content: '<:Erreur:1343303750336385185> Vous avez atteint la limite de commandes. Veuillez réessayer plus tard.', flags: [MessageFlags.Ephemeral] });
+        return interaction.reply({ content: '❌ Vous avez atteint la limite de commandes. Veuillez réessayer plus tard.', flags: [MessageFlags.Ephemeral] });
     }
 
     if (!data.servers[guildId]) {
@@ -517,14 +517,14 @@ let queueEmbedMessage = null;
 
 async function handleBumpCommand(interaction, serverData, user, guildId) {
     if (!serverData.bumpChannel) {
-        return interaction.reply({ content: '<:Erreur:1343303750336385185> Le salon de bump n\'est pas configuré.', flags: [MessageFlags.Ephemeral] });
+        return interaction.reply({ content: '❌ Le salon de bump n\'est pas configuré.', flags: [MessageFlags.Ephemeral] });
     }
 
     if (isOnCooldown(serverData.lastBump, BUMP_COOLDOWN)) {
         const remainingTime = getRemainingCooldownTime(serverData.lastBump, BUMP_COOLDOWN);
         const formattedTime = formatRemainingTime(remainingTime);
         return interaction.reply({
-            content: `<:Erreur:1343303750336385185> Vous devez attendre encore ${formattedTime} avant de pouvoir bump à nouveau.`,
+            content: `❌ Vous devez attendre encore ${formattedTime} avant de pouvoir bump à nouveau.`,
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -684,7 +684,7 @@ async function sendBump(interaction, serverData, user, guildId, cooldown) {
     // Réponse à l'interaction
     const responseEmbed = new EmbedBuilder()
         .setTitle('Bump réussi !')
-        .setDescription(`<:Valider:1343303723853676606> Le bump vient d’être envoyé avec succès !\nLe serveur a actuellement un total de **${serverData.bumpCount}** bump(s).\nN’oubliez pas que vous pouvez désactiver les rappels de bump en utilisant la commande </ping_config:1322269424832479284>.\n\nVous avez gagné **${randomXP} XP** !`)
+        .setDescription(`✅ Le bump vient d’être envoyé avec succès !\nLe serveur a actuellement un total de **${serverData.bumpCount}** bump(s).\nN’oubliez pas que vous pouvez désactiver les rappels de bump en utilisant la commande </ping_config:1322269424832479284>.\n\nVous avez gagné **${randomXP} XP** !`)
         .setImage('https://i.imgur.com/Qy5DRuq.jpeg')
         .setFooter({ text: `${guild.name}`, iconURL: guild.iconURL({ dynamic: true }) })
         .setTimestamp()
@@ -719,7 +719,7 @@ async function updateQueueEmbed(channelId) {
     } else {
         embed = new EmbedBuilder()
             .setDescription(`
-        <:Valider:1343303723853676606> Envois réussis: **${successPercentage}%** (${totalBumps} réussis)\t <:Erreur:1343303750336385185> Envois échoués: **${failurePercentage}%** (${totalFailedBumps} échoués)
+        ✅ Envois réussis: **${successPercentage}%** (${totalBumps} réussis)\t ❌ Envois échoués: **${failurePercentage}%** (${totalFailedBumps} échoués)
         `)
             .setColor('#00AAFF');
     }
@@ -740,7 +740,7 @@ async function handlePingConfigCommand(interaction, serverData) {
     dataChanged = true;
     await saveDataIfChanged();
     interaction.reply({
-        content: `🕒 Les rappels sont maintenant ${serverData.reminders ? '<:Valider:1343303723853676606> activés' : '<:Erreur:1343303750336385185> désactivés'}.`,
+        content: `🕒 Les rappels sont maintenant ${serverData.reminders ? '✅ activés' : '❌ désactivés'}.`,
         flags: [MessageFlags.Ephemeral]
     });
 }
@@ -748,7 +748,7 @@ async function handlePingConfigCommand(interaction, serverData) {
 async function handleBumpToggleCommand(interaction, serverData) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
         return interaction.reply({
-            content: '<:Erreur:1343303750336385185> Vous devez être administrateur pour utiliser cette commande.',
+            content: '❌ Vous devez être administrateur pour utiliser cette commande.',
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -756,7 +756,7 @@ async function handleBumpToggleCommand(interaction, serverData) {
     dataChanged = true;
     await saveDataIfChanged();
     interaction.reply({
-        content: `🤖 Le bot est maintenant ${serverData.enabled ? '<:Valider:1343303723853676606> activé' : '<:Erreur:1343303750336385185> désactivé'}.`,
+        content: `🤖 Le bot est maintenant ${serverData.enabled ? '✅ activé' : '❌ désactivé'}.`,
         flags: [MessageFlags.Ephemeral]
     });
 }
@@ -765,7 +765,7 @@ async function handleTopServerCommand(interaction) {
     // Vérifier si data et data.servers existent
     if (!data || !data.servers) {
         return interaction.reply({
-            content: '<:Erreur:1343303750336385185> Les données ne sont pas disponibles pour le moment.',
+            content: '❌ Les données ne sont pas disponibles pour le moment.',
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -805,7 +805,7 @@ async function handleTopUserCommand(interaction, guildId) {
     // Vérifier si data et data.servers existent
     if (!data || !data.servers || !data.servers[guildId] || !data.servers[guildId].userData) {
         return interaction.reply({
-            content: '<:Erreur:1343303750336385185> Les données ne sont pas disponibles pour le moment.',
+            content: '❌ Les données ne sont pas disponibles pour le moment.',
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -847,7 +847,7 @@ async function handleTopUserCommand(interaction, guildId) {
 async function handleBumpConfigCommand(interaction, serverData) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
         return interaction.reply({
-            content: '<:Erreur:1343303750336385185> Vous devez être administrateur pour utiliser cette commande.',
+            content: '❌ Vous devez être administrateur pour utiliser cette commande.',
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -879,7 +879,7 @@ async function handleBumpConfigModalSubmit(interaction, serverData) {
 
     // Vérification de la longueur minimale de la description
     if (description.length < 400) {
-        return interaction.reply({ content: '<:Erreur:1343303750336385185> La description doit contenir au moins 400 caractères.', flags: [MessageFlags.Ephemeral] });
+        return interaction.reply({ content: '❌ La description doit contenir au moins 400 caractères.', flags: [MessageFlags.Ephemeral] });
     }
 
     // Expression régulière pour les domaines interdits
@@ -897,38 +897,38 @@ async function handleBumpConfigModalSubmit(interaction, serverData) {
 
     for (const link of allLinks) {
         if (forbiddenDomainsRegex.test(link)) {
-            return interaction.reply({ content: '<:Erreur:1343303750336385185> Le lien fourni est interdit.', flags: [MessageFlags.Ephemeral] });
+            return interaction.reply({ content: '❌ Le lien fourni est interdit.', flags: [MessageFlags.Ephemeral] });
         }
     }
 
     if (bannerLink && !/^https?:\/\/.+/.test(bannerLink)) {
-        return interaction.reply({ content: '<:Erreur:1343303750336385185> Le lien de la bannière n\'est pas valide.', flags: [MessageFlags.Ephemeral] });
+        return interaction.reply({ content: '❌ Le lien de la bannière n\'est pas valide.', flags: [MessageFlags.Ephemeral] });
     }
 
     serverData.description = description;
     serverData.bannerLink = bannerLink;
     dataChanged = true;
     await saveDataIfChanged();
-    interaction.reply({ content: '<:Valider:1343303723853676606> Configuration mise à jour avec succès.', flags: [MessageFlags.Ephemeral] });
+    interaction.reply({ content: '✅ Configuration mise à jour avec succès.', flags: [MessageFlags.Ephemeral] });
 }
 
 async function handleBumpSetChannelCommand(interaction, serverData, channel) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
         return interaction.reply({
-            content: '<:Erreur:1343303750336385185> Vous devez être administrateur pour utiliser cette commande.',
+            content: '❌ Vous devez être administrateur pour utiliser cette commande.',
             flags: [MessageFlags.Ephemeral]
         });
     }
     serverData.bumpChannel = channel.id;
     dataChanged = true;
     await saveDataIfChanged();
-    interaction.reply({ content: '<:Valider:1343303723853676606> Salon de bump configuré avec succès.', flags: [MessageFlags.Ephemeral] });
+    interaction.reply({ content: '✅ Salon de bump configuré avec succès.', flags: [MessageFlags.Ephemeral] });
 }
 
 async function handleBumpPreviewCommand(interaction, serverData, guildId) {
     if (!interaction.member.permissions.has(PermissionFlagsBits.Administrator)) {
         return interaction.reply({
-            content: '<:Erreur:1343303750336385185> Vous devez être administrateur pour utiliser cette commande.',
+            content: '❌ Vous devez être administrateur pour utiliser cette commande.',
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -949,7 +949,7 @@ async function handleStatsBumpCommand(interaction) {
     // Vérifier si data et data.servers existent
     if (!data || !data.servers) {
         return interaction.reply({
-            content: '<:Erreur:1343303750336385185> Les données ne sont pas disponibles pour le moment.',
+            content: '❌ Les données ne sont pas disponibles pour le moment.',
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -1019,7 +1019,7 @@ async function handleVoteCommand(interaction, serverData, user, guildId) {
         const remainingTime = getRemainingCooldownTime(serverData.lastVote || 0, VOTE_COOLDOWN);
         const formattedTime = formatRemainingTime(remainingTime);
         return interaction.reply({
-            content: `<:Erreur:1343303750336385185> Vous devez attendre encore ${formattedTime} avant de pouvoir voter à nouveau.`,
+            content: `❌ Vous devez attendre encore ${formattedTime} avant de pouvoir voter à nouveau.`,
             flags: [MessageFlags.Ephemeral]
         });
     }
@@ -1031,7 +1031,7 @@ async function handleVoteCommand(interaction, serverData, user, guildId) {
     dataChanged = true;
     const responseEmbed = new EmbedBuilder()
         .setTitle('Vote réussi !')
-        .setDescription(`<:Valider:1343303723853676606> Le vote vient d’être enregistré avec succès !\nLe serveur a actuellement un total de **${serverData.voteCount}** vote(s).`)
+        .setDescription(`✅ Le vote vient d’être enregistré avec succès !\nLe serveur a actuellement un total de **${serverData.voteCount}** vote(s).`)
         .setImage('https://i.imgur.com/8a9Mc6F.jpeg')
         .setFooter({ text: `${interaction.guild.name}`, iconURL: interaction.guild.iconURL({ dynamic: true }) })
         .setTimestamp()
