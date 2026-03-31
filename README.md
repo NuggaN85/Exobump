@@ -45,6 +45,14 @@ MYSQL_DATABASE=VOTRE_BASE_DE_DONNEES_MYSQL
 
 4. Exécutez le bot avec la commande `node index.js`.
 
+## Ajouter le bot
+
+- Les permissions nécessaires pour ajouter le bot à vos serveurs
+
+```plaintext
+https://discord.com/oauth2/authorize?client_id=ID_BOT&permissions=2147863569&scope=bot+applications.commands
+```
+
 ## Commandes
 
 Le bot utilise des commandes slash pour interagir avec les utilisateurs. Voici les commandes disponibles :
