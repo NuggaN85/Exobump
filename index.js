@@ -623,12 +623,12 @@ async function sendBump(interaction, serverData, user, guildId, cooldown) {
 
     const addExobumpButton = new ButtonBuilder()
         .setLabel('Ajouter Exobump')
-        .setURL('https://discord.com/discovery/applications/1316463410682007572')
+        .setURL('https://discord.com/oauth2/authorize?client_id=1316463410682007572&permissions=2147863569&integration_type=0&scope=bot+applications.commands')
         .setStyle(ButtonStyle.Link);
 
     const voteExobumpButton = new ButtonBuilder()
         .setLabel('Voter Exobump')
-        .setURL('https://discord.ly/exobump')
+        .setURL('https://botlist.top/bot/1316463410682007572/vote')
         .setStyle(ButtonStyle.Link);
 
     const actionRow = new ActionRowBuilder().addComponents(joinButton, addExobumpButton, voteExobumpButton);
