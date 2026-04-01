@@ -685,7 +685,7 @@ async function sendBump(interaction, serverData, user, guildId, cooldown) {
     const responseEmbed = new EmbedBuilder()
         .setTitle('Bump réussi !')
         .setDescription(`✅ Le bump vient d’être envoyé avec succès !\nLe serveur a actuellement un total de **${serverData.bumpCount}** bump(s).\nN’oubliez pas que vous pouvez désactiver les rappels de bump en utilisant la commande </ping_config:1322269424832479284>.\n\nVous avez gagné **${randomXP} XP** !`)
-        .setImage('https://i.imgur.com/Qy5DRuq.jpeg')
+        .setImage('https://placehold.co/1536x1024/000000/d1d1d1.png?font=roboto')
         .setFooter({ text: `${guild.name}`, iconURL: guild.iconURL({ dynamic: true }) })
         .setTimestamp()
         .setColor('#00AAFF');
@@ -1032,7 +1032,7 @@ async function handleVoteCommand(interaction, serverData, user, guildId) {
     const responseEmbed = new EmbedBuilder()
         .setTitle('Vote réussi !')
         .setDescription(`✅ Le vote vient d’être enregistré avec succès !\nLe serveur a actuellement un total de **${serverData.voteCount}** vote(s).`)
-        .setImage('https://i.imgur.com/8a9Mc6F.jpeg')
+        .setImage('https://placehold.co/1536x1024/000000/d1d1d1.png?font=roboto')
         .setFooter({ text: `${interaction.guild.name}`, iconURL: interaction.guild.iconURL({ dynamic: true }) })
         .setTimestamp()
         .setColor('#00AAFF');
